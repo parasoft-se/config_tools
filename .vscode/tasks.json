@@ -1,0 +1,64 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Configure Development Environment",
+			"detail": "Configure Development Environment",
+			"type": "shell",
+			"command": "python",
+			"args": [
+				"init/webapp.py",
+				"-action", 
+				"configure",
+				"-mode",
+				"development"],
+			"group": "build",
+			"options":{
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": []			
+		},
+		{
+      "label": "Run Unit Tests in Docker Container",
+			"detail": "Run Unit Tests",
+			"type": "shell",
+			"command": "docker",
+			"args": [
+				"exec",
+				"-t", 
+				"-w",
+				"/usr/share/nginx/html/stack/backend/tests",
+				"website_php_fpm",
+				"sh",
+				"-c",
+				"../src/third_party/vendor/phpunit/phpunit/phpunit --display-deprecations --display-skipped --display-incomplete --display-warnings --bootstrap ../autoload.php ."],
+			"group": "test",
+			"options":{
+				"cwd": "${workspaceFolder}/stack/backend/tests"
+			},
+			"problemMatcher": []			
+		},
+		{
+      "label": "Run Unit Tests in Dev Container",
+			"detail": "Run Unit Tests",
+			"type": "shell",
+			"command": "phpunit",
+			"args": [
+				"--display-deprecations",
+				"--display-skipped", 
+				"--display-incomplete",
+				"--display-warnings",
+				"--do-not-cache-result",
+				"--bootstrap",
+				"./autoload.php",
+				"./units"],
+			"group": "test",
+			"options":{
+				"cwd": "${workspaceFolder}/stack/backend/tests"
+			},
+			"problemMatcher": []			
+		}
+  ]
+}

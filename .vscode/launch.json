@@ -1,0 +1,137 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: Current File",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+          "PYTHONPATH": "${cwd}"
+      },
+      "justMyCode": true
+    },
+    {
+      "name": "Config Tools - Initialize",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/config_tools.py",
+      "console": "integratedTerminal",
+      "args": "-init -db-user root -db-pass P@ss1w@rd -cache .cache -reset",
+      "cwd": "${workspaceFolder}",
+      "env": {
+          "PYTHONPATH": "${cwd}"
+      },
+      "justMyCode": true
+    },
+    {
+      "name": "Rule Tools - Category List",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/config_tools.py",
+      "console": "integratedTerminal",
+      "args": "-list-categories -version 2024.1.0",
+      "cwd": "${workspaceFolder}",
+      "env": {
+          "PYTHONPATH": "${cwd}"
+      },
+      "justMyCode": true
+    },
+    {
+      "name": "Rule Tools - Category Mapping",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/config_tools.py",
+      "console": "integratedTerminal",
+      "args": "-category-mapping MISRAC2012 -version 2024.1.0",
+      "cwd": "${workspaceFolder}",
+      "env": {
+          "PYTHONPATH": "${cwd}"
+      },
+      "justMyCode": true
+    },
+    {
+      "name": "Rule Tools - Delta Rules",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/config_tools.py",
+      "console": "integratedTerminal",
+      "args": "-delta-rules -category -start-version 2023.2.0 -end-version 2024.1.0 -csv",
+      "cwd": "${workspaceFolder}",
+      "env": {
+          "PYTHONPATH": "${cwd}"
+      },
+      "justMyCode": true
+    },
+    {
+      "name": "Rule Tools - Delta Rule Settings",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/config_tools.py",
+      "console": "integratedTerminal",
+      "args": "-delta-rule-settings -start-version 2022.1.0 -end-version 2023.2.0 -csv",
+      "cwd": "${workspaceFolder}",
+      "env": {
+          "PYTHONPATH": "${cwd}"
+      },
+      "justMyCode": true
+    },
+    {
+      "name": "Rule Tools - Rule Category Comparison",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/config_tools.py",
+      "console": "integratedTerminal",
+      "args": "-delta-category-rules -version 2024.1.0 -category AUTOSAR -category MISRACPP2023 -csv",
+      "cwd": "${workspaceFolder}",
+      "env": {
+          "PYTHONPATH": "${cwd}"
+      },
+      "justMyCode": true
+    },
+    {
+      "name": "Rule Tools - Config Validation",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/config_tools.py",
+      "console": "integratedTerminal",
+      "args": "-validate-config -version 2024.1.0 -config '/opt/parasoft/cpptest/std/2024.1.0/configs/builtin/AUTOSAR C++14 Coding Guidelines.properties'",
+      "cwd": "${workspaceFolder}",
+      "env": {
+          "PYTHONPATH": "${cwd}"
+      },
+      "justMyCode": true
+    },
+    {
+      "name": "Rule Tools - Remap Severities",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/config_tools.py",
+      "console": "integratedTerminal",
+      "args": "-remap-severities -version 2024.1.0 -map-id GDMS -config ~/Downloads/gdms/SEI_CERT_C_CPP_Rules.properties -severity-map ~/Downloads/gdms/expected_severity.csv",
+      "cwd": "${workspaceFolder}",
+      "env": {
+          "PYTHONPATH": "${cwd}"
+      },
+      "justMyCode": true
+    },
+    {
+      "name": "Rule Tools - Reduce Config",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/config_tools.py",
+      "console": "integratedTerminal",
+      "args": "-reduce-config -version 2024.2.0 -input \"/home/cboxrieder/Downloads/UTF-8Rocket Lab Rules.properties\" -output \"/home/cboxrieder/Downloads/UTF-8Rocket Lab Rules.reduced.properties\" -verbose",
+      "cwd": "${workspaceFolder}",
+      "env": {
+          "PYTHONPATH": "${cwd}"
+      },
+      "justMyCode": true
+    }
+  ]
+}

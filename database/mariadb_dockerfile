@@ -1,0 +1,10 @@
+FROM mariadb:latest
+
+RUN apt-get update
+RUN apt-get install -y iputils-ping tar wget vim
+
+ENV TZ="America/New_York"
+RUN date
+
+
+COPY db.sql /docker-entrypoint-initdb.d/

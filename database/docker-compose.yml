@@ -1,0 +1,24 @@
+services:
+  rules-db:
+    build:
+      context: .
+      dockerfile: mariadb_dockerfile
+    container_name: rules-db
+    restart: unless-stopped
+    volumes:
+      - rules_db_volume:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: P@ss1w@rd
+      MYSQL_TCP_PORT: 3306
+    ports:
+      - "3308:3306"
+    networks:
+      - rules_db_network
+
+volumes:
+  rules_db_volume:
+    name: rules_db_volume
+
+networks:
+  rules_db_network:
+    driver: bridge
