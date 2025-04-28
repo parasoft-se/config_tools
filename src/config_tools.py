@@ -180,7 +180,7 @@ def command_reduce_config():
 
                 enabled_count = 0
 
-                reduced, status, original_enabled_count, reduced_enabled_count = cf.reduce(reference_rules, True, True)
+                reduced, status, original_enabled_count, reduced_enabled_count = cf.reduce_better(reference_rules, True, True)
 
                 for rule in reference_rules:
                     if reference_rules[rule].enabled: enabled_count += 1

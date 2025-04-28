@@ -1,0 +1,34 @@
+Models
+  - Rule
+    - Definition of Rule + Settings
+    - Methods
+      - IsChild/IsParent
+      - FullName
+      - GetParentFullName
+      - GetConfig(enabled)
+  - Setting
+    - Definition of Setting
+      - Rule Setting OR
+      - Config Setting
+    - Methods
+      - GetConfig(value)
+
+  
+Objects
+- TestConfiguration
+  - Load/Save
+  - Minimize
+  - Validate
+    - Settings
+    - Rules
+  - Upgrade/Downgrade
+  - Merge
+- RulesDefinition
+  - Load
+  - 
+- SettingsDefinition
+  - Load
+- RuleState # holds state of a rule from a configuration - validation state, enabled state
+- SettingState # holds state of a setting from a configuration - validation state, value
+
+

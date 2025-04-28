@@ -576,6 +576,78 @@ class ConfigFile:
 			
 		return minimized
 
+	def reduce_better(self, reference_rules: dict[str, Rule], remove_disabled_rules: bool = False, remove_disabled_rule_settings: bool = False) -> Tuple[dict[str, str], dict[str,str], int, int]:
+		reduced_config = {}
+
+		root_rules = {}
+		reduced_rules = {}
+		original_enabled_count = 0
+		reduced_enabled_count = 0
+
+		# Load settings from config file into rules and validate them, reorganizing the rules into a tree structure in root_rules
+		for rule in reference_rules:
+			reference_rules[rule].load_and_validate(self.settings)
+
+			if reference_rules[rule].enabled:
+				original_enabled_count += 1
+
+			# Check if rule is a child or parent
+			if reference_rules[rule].parent_name is not None:
+				# Child rule
+				if reference_rules[rule].parent_name not in root_rules:
+					root_rules[reference_rules[rule].parent_name] = {"rule": reference_rules[reference_rules[rule].parent_name], "children": [reference_rules[rule]]}
+				else:
+					root_rules[reference_rules[rule].parent_name]["children"].append(reference_rules[rule])
+
+			else:
+				# Parent rule
+				if reference_rules[rule].full_name not in root_rules:
+					root_rules[reference_rules[rule].full_name] = {"rule": reference_rules[reference_rules[rule].full_name], "children": []}
+				else:
+					Console.print_warning(f"'{reference_rules[rule].full_name}' is a duplicated parent rule. Ignoring, but the test configuration may be invalid.")
+
+		# Find children which have different settings from parent (if enabled). 
+		compare_rules = []
+
+		for parent_name in root_rules:
+			if root_rules[parent_name]["rule"].enabled:
+				compare_rules.append(root_rules[parent_name]["rule"])
+			for child in root_rules[parent_name]["children"]:
+				if child.enabled:
+					compare_rules.append(child)
+
+		if len(compare_rules) > 0:
+			unique_rules = []
+
+			while len(compare_rules) > 0:
+				for i in range(0, len(compare_rules)):
+					for j in range(i+1, len(compare_rules)):
+						if compare_rules[i].compare_settings(compare_rules[j], False, False, True):
+							# rules have the same settings, making them identical
+							
+							compare_rules.pop(j)
+
+
+				
+				
+			
+
+		# Process the rules in the tree structure
+		#  1) Enable parent rule if any child is enabled
+		#  2) If the parent rule is enabled or multiple children are enabled, ensure all settings are identical before merging - otherwise they are unique
+		#  3) Add rule to new config if enabled or if remove_disabled_rules is False
+		for parent_name in root_rules:
+			for child in root_rules[parent_name]["children"]:
+				if child.enabled:
+					root_rules[parent_name]["rule"].enabled = True
+
+			if root_rules[parent_name]["rule"].enabled:
+				reduced_rules[parent_name] = root_rules[parent_name]["rule"]
+		
+		
+		return {}
+
+
 	def reduce(self, reference_rules: dict[str, Rule], remove_disabled_rules: bool = False, remove_disabled_rule_settings: bool = False) -> Tuple[dict[str, str], dict[str,str], int, int]:
 		reduced_config = {}
 
