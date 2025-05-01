@@ -607,6 +607,11 @@ class ConfigFile:
 					Console.print_warning(f"'{reference_rules[rule].full_name}' is a duplicated parent rule. Ignoring, but the test configuration may be invalid.")
 
 		# Find children which have different settings from parent (if enabled). 
+		# Steps, for each root rule + children:
+		# 1) Add all enabled rules to a rule list, starting with root rule if it is enabled
+		# 2) Loop over every rule - start with first rule, add to root_rules (if it isn't the root rule) and remove from compare_list
+		# 3) Compare to next rule, if same settings, add as child. If not, do nothing
+		# 4) Repeat 2-4 until compare_list is empty
 		compare_rules = []
 
 		for parent_name in root_rules:
@@ -616,16 +621,17 @@ class ConfigFile:
 				if child.enabled:
 					compare_rules.append(child)
 
-		if len(compare_rules) > 0:
-			unique_rules = []
+			while (len(compare_rules) > 0 ):
+			if len(compare_rules) > 0:
+				unique_rules = []
 
-			while len(compare_rules) > 0:
-				for i in range(0, len(compare_rules)):
-					for j in range(i+1, len(compare_rules)):
-						if compare_rules[i].compare_settings(compare_rules[j], False, False, True):
-							# rules have the same settings, making them identical
-							
-							compare_rules.pop(j)
+				while len(compare_rules) > 0:
+					for i in range(0, len(compare_rules)):
+						for j in range(i+1, len(compare_rules)):
+							if compare_rules[i].compare_settings(compare_rules[j], False, False, True):
+								# rules have the same settings, making them identical
+								
+								compare_rules.pop(j)
 
 
 				
