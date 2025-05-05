@@ -576,15 +576,17 @@ class ConfigFile:
 			
 		return minimized
 
-	def reduce_better(self, reference_rules: dict[str, Rule], remove_disabled_rules: bool = False, remove_disabled_rule_settings: bool = False) -> Tuple[dict[str, str], dict[str,str], int, int]:
+	def reduce_better(self, reference_rules: dict[str, Rule], remove_disabled_rules: bool = False, remove_disabled_rule_settings: bool = False) -> Tuple[dict[str, str], dict[str,str], int, int, int]:
 		reduced_config = {}
 
 		root_rules = {}
 		reduced_rules = {}
+		substitutions = {}
 		original_enabled_count = 0
-		reduced_enabled_count = 0
+		reduced_count = 0
+		new_enabled_count = 0
 
-		# Load settings from config file into rules and validate them, reorganizing the rules into a tree structure in root_rules
+		# Load settings from config file into rules and validate them, reorganizing the rules into a tree structure called root_rules
 		for rule in reference_rules:
 			reference_rules[rule].load_and_validate(self.settings)
 
@@ -595,63 +597,105 @@ class ConfigFile:
 			if reference_rules[rule].parent_name is not None:
 				# Child rule
 				if reference_rules[rule].parent_name not in root_rules:
-					root_rules[reference_rules[rule].parent_name] = {"rule": reference_rules[reference_rules[rule].parent_name], "children": [reference_rules[rule]]}
+					root_rules[reference_rules[rule].parent_name] = {"rule": reference_rules[reference_rules[rule].parent_name], "children": {reference_rules[rule].full_name:reference_rules[rule]}}
 				else:
-					root_rules[reference_rules[rule].parent_name]["children"].append(reference_rules[rule])
+					root_rules[reference_rules[rule].parent_name]["children"][reference_rules[rule].full_name] = reference_rules[rule]
 
 			else:
 				# Parent rule
 				if reference_rules[rule].full_name not in root_rules:
-					root_rules[reference_rules[rule].full_name] = {"rule": reference_rules[reference_rules[rule].full_name], "children": []}
+					root_rules[reference_rules[rule].full_name] = {"rule": reference_rules[reference_rules[rule].full_name], "children": {}}
 				else:
 					Console.print_warning(f"'{reference_rules[rule].full_name}' is a duplicated parent rule. Ignoring, but the test configuration may be invalid.")
 
 		# Find children which have different settings from parent (if enabled). 
-		# Steps, for each root rule + children:
-		# 1) Add all enabled rules to a rule list, starting with root rule if it is enabled
-		# 2) Loop over every rule - start with first rule, add to root_rules (if it isn't the root rule) and remove from compare_list
-		# 3) Compare to next rule, if same settings, add as child. If not, do nothing
-		# 4) Repeat 2-4 until compare_list is empty
-		compare_rules = []
-
+		# Steps, looping over each root rule + children:
+		# 1) If root enabled
+		#   - if child enabled - compare settings with root and other enabled children 
+    #   - if same, disable child. If different, leave child enabled.
+		# 2) If root disabled
+		#   - if child enabled - compare settings with other enabled children
+		#   - disable child and enable parent with child settings.
 		for parent_name in root_rules:
 			if root_rules[parent_name]["rule"].enabled:
-				compare_rules.append(root_rules[parent_name]["rule"])
-			for child in root_rules[parent_name]["children"]:
-				if child.enabled:
-					compare_rules.append(child)
+				substitutions[parent_name] = {"replaced_with": "None", "reason": "Already enabled parent rule"}
 
-			while (len(compare_rules) > 0 ):
-			if len(compare_rules) > 0:
-				unique_rules = []
+			for child_name in root_rules[parent_name]["children"]:
+				if root_rules[parent_name]["children"][child_name].enabled:
+					if root_rules[parent_name]["rule"].enabled:
+						# Parent rule is enabled
+						if root_rules[parent_name]["rule"].compare_settings(root_rules[parent_name]["children"][child_name], False, False, True):
+							# Child settings are identical to parent, disable child
+							root_rules[parent_name]["children"][child_name].enabled = False
+							reduced_count += 1
+							substitutions[child_name] = {"replaced_with": root_rules[parent_name]["rule"].full_name, "reason": "Duplicate of Already Enabled Parent Rule"}
+						else:
+							Console.print_info(f"'{root_rules[parent_name]['rule'].full_name}' and '{root_rules[parent_name]['children'][child_name].full_name}' have different settings. Keeping both enabled.")
 
-				while len(compare_rules) > 0:
-					for i in range(0, len(compare_rules)):
-						for j in range(i+1, len(compare_rules)):
-							if compare_rules[i].compare_settings(compare_rules[j], False, False, True):
-								# rules have the same settings, making them identical
-								
-								compare_rules.pop(j)
+					else:
+						root_rules[parent_name]["rule"].enabled = True
+						root_rules[parent_name]["rule"].copy_settings(root_rules[parent_name]["children"][child_name])
+						root_rules[parent_name]["children"][child_name].enabled = False
+						#reduced_count += 1
+						substitutions[child_name] = {"replaced_with": root_rules[parent_name]["rule"].full_name, "reason": "Substituted with Parent Rule"}
 
-
+				  # If child rule is still enabled, then it was a duplicate (with different settings) of the root rule which was also enabled 
+					# This means other enabled children need to be compared to the child rule and the parent rule
+					if root_rules[parent_name]["children"][child_name].enabled:
+						for other_child_name in root_rules[parent_name]["children"]:
+							if other_child_name != child_name and root_rules[parent_name]["children"][other_child_name].enabled:
+								if root_rules[parent_name]["children"][child_name].compare_settings(root_rules[parent_name]["children"][other_child_name], False, False, True):
+									# Child settings are identical to other child, disable other child
+									root_rules[parent_name]["children"][other_child_name].enabled = False
+									reduced_count += 1
+									substitutions[other_child_name] = {"replaced_with": root_rules[parent_name]["children"][child_name].full_name, "reason": "Duplicate of Another Child Rule"}
+								elif root_rules[parent_name]["rule"].compare_settings(root_rules[parent_name]["children"][other_child_name], False, False, True):
+									# Other child settings are identical to parent, disable other child
+									root_rules[parent_name]["children"][other_child_name].enabled = False
+									reduced_count += 1
+									substitutions[other_child_name] = {"replaced_with": root_rules[parent_name]["rule"].full_name, "reason": "Duplicate of Parent Rule"}
+								else:
+									Console.print_info(f"'{root_rules[parent_name]['children'][child_name].full_name}' and '{root_rules[parent_name]['children'][other_child_name].full_name}' have different settings. Keeping both enabled.")
+					else:
+						# Parent rule was enabled or was a duplicate of the child rule, only need to compare other children to parent rule
+						for other_child_name in root_rules[parent_name]["children"]:
+							if other_child_name != child_name and root_rules[parent_name]["children"][other_child_name].enabled:
+								if root_rules[parent_name]["rule"].compare_settings(root_rules[parent_name]["children"][other_child_name], False, False, True):
+									# Other child settings are identical to parent, disable other child
+									root_rules[parent_name]["children"][other_child_name].enabled = False
+									reduced_count += 1
+									substitutions[other_child_name] = {"replaced_with": root_rules[parent_name]["rule"].full_name, "reason": "Duplicate of Parent Rule"}
+								else:
+									Console.print_info(f"'{root_rules[parent_name]['rule'].full_name}' and '{root_rules[parent_name]['children'][other_child_name].full_name}' have different settings. Keeping both enabled.")
 				
-				
-			
+		# We should have a tree structure of rules that is reduced at this point.
+		# Flatten out the tree structure into a dictionary of rules without parent / child relationships	
+		# Note: If a parent rule is disabled, all children should be disabled
+		for rule_name in root_rules:
+			if root_rules[rule_name]["rule"].enabled:
+				new_enabled_count += 1
+				reduced_rules[rule_name] = root_rules[rule_name]["rule"]
+				reduced_config.update(root_rules[rule_name]["rule"].to_config())
 
-		# Process the rules in the tree structure
-		#  1) Enable parent rule if any child is enabled
-		#  2) If the parent rule is enabled or multiple children are enabled, ensure all settings are identical before merging - otherwise they are unique
-		#  3) Add rule to new config if enabled or if remove_disabled_rules is False
-		for parent_name in root_rules:
-			for child in root_rules[parent_name]["children"]:
-				if child.enabled:
-					root_rules[parent_name]["rule"].enabled = True
+			for child_name in root_rules[rule_name]["children"]:
+				if root_rules[rule_name]["children"][child_name].enabled:
+					new_enabled_count += 1
+					reduced_rules[child_name] = root_rules[rule_name]["children"][child_name]
+					reduced_config.update(root_rules[rule_name]["children"][child_name].to_config())
 
-			if root_rules[parent_name]["rule"].enabled:
-				reduced_rules[parent_name] = root_rules[parent_name]["rule"]
+					if not root_rules[rule_name]["rule"].enabled:
+						Console.print_warning(f"'{root_rules[rule_name]['rule'].full_name}' is disabled, but child '{child_name}' is enabled. This contradicts intent - this shouldn't happen.")
 		
-		
-		return {}
+		# sort rules config
+		reduced_config = dict(sorted(reduced_config.items()))
+		substitutions = dict(sorted(substitutions.items()))
+
+		# Add all non rule settings in
+		for s in self.settings:
+			if self.settings[s][0].target == Setting.TARGET_CONFIG:
+				reduced_config[s] = self.settings[s][0].value
+
+		return reduced_config, substitutions, original_enabled_count, reduced_count, new_enabled_count
 
 
 	def reduce(self, reference_rules: dict[str, Rule], remove_disabled_rules: bool = False, remove_disabled_rule_settings: bool = False) -> Tuple[dict[str, str], dict[str,str], int, int]:

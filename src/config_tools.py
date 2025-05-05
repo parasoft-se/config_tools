@@ -180,7 +180,7 @@ def command_reduce_config():
 
                 enabled_count = 0
 
-                reduced, status, original_enabled_count, reduced_enabled_count = cf.reduce_better(reference_rules, True, True)
+                reduced, status, original_enabled_count, reduced_count, new_enabled_count = cf.reduce_better(reference_rules, True, True)
 
                 for rule in reference_rules:
                     if reference_rules[rule].enabled: enabled_count += 1
@@ -188,14 +188,15 @@ def command_reduce_config():
                 reduced['configuration.name'] = reduced['configuration.name'] + ' (REDUCED BY SCRIPT)'
                 ConfigFile.save(reduced, output_file)
 
-                report_file = config_file + '.changes.txt'
+                report_file = config_file + '.changes.csv'
                 with open(report_file, 'w') as report:
-                    report.write("Original Rule,Status\n");
+                    report.write("Original Rule,Replaced With,Reason\n");
                     for rule in status:
-                        report.write(f"{rule},{status[rule]}\n");
+                        report.write(f"{rule},{status[rule]["replaced_with"]},{status[rule]["reason"]}\n");
                 
                     report.write(f"Original Enabled Rule Count,{original_enabled_count}\n")
-                    report.write(f"Reduced Enabled Rule Count,{reduced_enabled_count}\n")
+                    report.write(f"Eliminated Rule Count,{reduced_count}\n")
+                    report.write(f"New Enabled Rule Count,{new_enabled_count}\n")
                 report.close()
 
             finally:
@@ -1260,10 +1261,7 @@ def get_latest_version_available(default='2022.2.0'):
     cursor = None
     version = default
     try:
-        handle = mysql.connector.connect(user=ps_rules_db_user, password=ps_rules_db_password,
-                                         database=ps_rules_db_name,
-                                         host='127.0.0.1'
-                                         )
+        handle = get_db_handle()
         cursor = handle.cursor(buffered=True)
 
         cursor.execute(
